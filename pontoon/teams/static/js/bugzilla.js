@@ -24,20 +24,20 @@ var Pontoon = (function (my) {
             'resolution': '---',
             'include_fields': 'id,summary,last_change_time,assigned_to'
           },
-          success: function(data) {
+          success: function (data) {
             if (data.bugs.length) {
-              data.bugs.sort(function(l, r) {
+              data.bugs.sort(function (l, r) {
                 return l.last_change_time < r.last_change_time ? 1 : -1;
               });
 
               var tbody = $('<tbody>'),
-                  formatter = new Intl.DateTimeFormat('en-GB', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  });
+                formatter = new Intl.DateTimeFormat('en-GB', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                });
 
-              $.each(data.bugs, function(i, bug) {
+              $.each(data.bugs, function (i, bug) {
                 // Prevent malicious bug summary from executin JS code
                 var summary = Pontoon.doNotRender(bug.summary);
 
@@ -73,12 +73,12 @@ var Pontoon = (function (my) {
                 class: 'buglist striped',
                 html: '<thead>' +
                   '<tr>' +
-                    '<th class="id">ID</th>' +
-                    '<th class="summary">Summary</th>' +
-                    '<th class="last-changed">Last Changed</th>' +
-                    '<th class="assigned-to">Assigned To</th>' +
+                  '<th class="id">ID</th>' +
+                  '<th class="summary">Summary</th>' +
+                  '<th class="last-changed">Last Changed</th>' +
+                  '<th class="assigned-to">Assigned To</th>' +
                   '</tr>' +
-                '</thead>'
+                  '</thead>'
               }).append(tbody);
 
               container.append(table.show());
@@ -90,11 +90,74 @@ var Pontoon = (function (my) {
               errorCallback('Zarro Boogs Found.');
             }
           },
-          error: function(error) {
+          error: function (error) {
             if (error.status === 0 && error.statusText !== 'abort') {
               errorCallback('Oops, something went wrong. We were unable to load the bugs. Please try again later.');
             }
-          }
+          }(),
+          /*
+       * Sort table
+       */
+          sort: function () {
+            $('body').on('click', 'table.buglist tabel.striped th', function () {
+              function getID(el) {
+                return $(el).find('.id').length;
+              }
+
+              function getSummary(el) {
+                return $(el).find('.summary').length;
+              }
+
+              function getLastChanged(el) {
+                return $(el).find('.last-changed"').length;
+              }
+
+              function getAssignedTo(el) {
+                return $(el).find('.assigned-to"').length;
+              }
+
+              function getString(el) {
+                return $(el).find('td:eq(' + index + ')').text();
+              }
+
+              var node = $(this),
+                index = node.index(),
+                table = node.parents('.table.buglist tabel.striped'),
+                list = table.find('tbody'),
+                items = list.find('tr'),
+                dir = node.hasClass('asc') ? -1 : 1,
+                cls = node.hasClass('asc') ? 'desc' : 'asc';
+
+              $(table).find('th').removeClass('asc desc');
+              node.addClass(cls);
+
+              items.sort(function (a, b) {
+
+                // Sort by assigned-to
+                if (node.is('.assigned-to')) {
+                  return (getAssignedTo(a) - getAssignedTo(b)) * dir;
+
+                  // Sort by last-changed
+                } else if (node.is('.last-changed')) {
+                  return (getLastChanged(a) - getLastChanged(b)) * dir;
+
+                  // Sort by summary
+                } else if (node.is('.summary')) {
+                  return (getSummary(a) - getSummary(b)) * dir;
+
+                  // Sort by id
+                } else if (node.is('.id')) {
+                  return (getID(a) - getID(b)) * dir;
+
+                  // Sort by alphabetical order
+                } else {
+                  return getString(a).localeCompare(getString(b)) * dir;
+                }
+              });
+
+              list.append(items);
+            });
+          }()
         });
       }
 
